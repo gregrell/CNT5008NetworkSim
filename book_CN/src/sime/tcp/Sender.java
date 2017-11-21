@@ -147,6 +147,11 @@ public abstract class Sender implements TimedComponent {
  	/** Last advertised size of the currently available space in the receiver's buffer. */
  	protected int rcvWindow = 65536;	// assume default as 65536 bytes
 
+	public int totalDupAcks = 0; // ADDED BY RELL
+	public int totalTimeouts= 0; // ADDED BY RELL
+	public int totalResetToSlowStart=0; //ADDED BY RELL
+
+
  	/**
  	 * Base class constructor; not public.
  	 */
@@ -504,6 +509,8 @@ public abstract class Sender implements TimedComponent {
 	 * current value of {@link #SSThresh}.
 	 */
 	public void resetParametersToSlowStart() {
+		incrementSlowStartCount();//ADDED BY RELL
+		//System.out.println("\t\t\t\t\t\t\t\tSENDER RESET TO SLOW START --- Total Number of reset to slow start : "+getTotalResetToSlowStart());//ADDED BY RELL
 		// Set new congestion window = 1 x MSS (single segment)
 		congWindow = MSS;
 
@@ -512,5 +519,32 @@ public abstract class Sender implements TimedComponent {
 
 		// Reset this param as well, just in case...
 		lastByteSentBefore3xDupAcksRecvd = -1;
+	}
+
+
+	//Following added by RELL
+
+	public void incrementDupAckCount(){
+		dupACKcount=dupACKcount+1;
+	}
+
+	public int getDupAckCount(){
+		return dupACKcount;
+	}
+
+	public void incrementTimeouts(){
+		totalTimeouts=totalTimeouts+1;
+	}
+
+	public int getTotalTimeouts(){
+		return totalTimeouts;
+	}
+
+	public void incrementSlowStartCount(){
+		totalResetToSlowStart=totalResetToSlowStart+1;
+	}
+
+	public int getTotalResetToSlowStart() {
+		return totalResetToSlowStart;
 	}
 }

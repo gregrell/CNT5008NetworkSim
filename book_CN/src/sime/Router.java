@@ -72,6 +72,9 @@ public class Router extends NetworkElement {
 	 */
 	private	ArrayList<Packet> packetBuffer = null;
 
+	public int totalPacketLoss=0;
+
+
 	/**
 	 * Constructor.
 	 * 
@@ -98,6 +101,10 @@ public class Router extends NetworkElement {
 	public int getMaxBufferSize() {
 		return bufferCapacity;
 	}
+
+
+
+
 
 	/**
 	 * Adds another entry into the router's forwarding table.
@@ -179,6 +186,15 @@ public class Router extends NetworkElement {
 
 		// Move the packet to the associated the output port:
 		outputPort_.handleIncomingPacket(source_, receivedPacket_);
+
+		//ADDED BY RELL
+		int totalDroppedPackets = outputPort_.getTotalDroppedPackets();
+
+		if (totalDroppedPackets!=0){
+			totalPacketLoss=outputPort_.getTotalDroppedPackets();
+			//System.out.println("\t\t\t\t\tTOTAL DROPPED PACKETS BY ROUTER ON INCOMING LINK: "+outputPort_.getTotalDroppedPackets()+" by "+outputPort_.toString());//ADDED BY RELL
+
+		}
 	}
 
 
@@ -186,7 +202,7 @@ public class Router extends NetworkElement {
 	/**
 	 * Inner class for router's output ports.
 	 */
-	protected class OutputPort {
+	public class OutputPort { //RELL CHANGED this class to public
 		/** The outgoing link associated with this output port. */
 		Link outgoingLink = null;
 
@@ -219,6 +235,10 @@ public class Router extends NetworkElement {
 		 */
 		double mismatchCount = 0.0;
 
+		//************************************ADDED BY RELL
+		//total number of packets dropped by the output port
+		public int totalDroppedPackets=0;
+
 		/**
 		 * Constructor for the inner class.
 		 * @param outgoingLink_ the outgoing link with which this output port will be associated
@@ -242,6 +262,7 @@ public class Router extends NetworkElement {
 		void handleIncomingPacket(NetworkElement source_, Packet receivedPacket_) {
 			// Calculate the mismatch ratio:
 			double mismatchRatio_ = calculateMismatchRatio((Link) source_);
+			int totalDropped;
 
 			// If there is no packet currently in transmission on the outgoing link:
 			if (packetInTransmission == null) {
@@ -265,7 +286,8 @@ public class Router extends NetworkElement {
 				} else if (	// This reporting is for debugging purposes only:
 				    (Simulator.currentReportingLevel & Simulator.REPORTING_ROUTERS) != 0
 				) {
-					System.out.println("\t  Router DROPS " + receivedPacket_.toString());
+					totalDroppedPackets=totalDroppedPackets+1;
+					System.out.println("\t  Router DROPS " + receivedPacket_.toString()+"\t Total Dropped Packets:"+totalDroppedPackets);
 				}
 
 				// Check if it's time to send one packet on the outgoing link:
@@ -386,5 +408,8 @@ public class Router extends NetworkElement {
 			}
 			return mismatchRatio_;
 		}
+
+		//ADDED BY RELL
+		public int getTotalDroppedPackets(){ return totalDroppedPackets; }
 	}
 }

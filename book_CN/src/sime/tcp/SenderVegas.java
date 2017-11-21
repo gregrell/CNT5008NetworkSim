@@ -9,26 +9,11 @@ package sime.tcp;
 import sime.Endpoint;
 
 /**
- * TCP Tahoe implementation of a sender.
- * <P>
- * <b>Note</b>: This implementation is based on
- * <a href="http://www.apps.ietf.org/rfc/rfc1122.html" target="page">RFC 1122 &ndash;
- * Requirements for Internet Hosts -- Communication Layers</a>,
- * published in 1989, which I believe specified TCP Tahoe.
- * See <a href="http://www.apps.ietf.org/rfc/rfc1122.html#sec-4.2" target="page">Section
- * 4.2</a> of RFC&nbsp;1122. <BR>
- * TCP Tahoe was superseded by TCP Reno, specified in
- * <a href="http://www.apps.ietf.org/rfc/rfc2001.html" target="page">RFC 2001</a>
- * and <a href="http://www.apps.ietf.org/rfc/rfc2581.html" target="page">RFC 2581</a>.
- * The current version (&ldquo;TCP NewReno&rdquo;) is specified in
- * <a href="http://tools.ietf.org/html/rfc5681" target="page">RFC 5681</a>.
- * <BR><i>Do not rely on any textbooks for precise details!</i>
- * <BR> Read the textbook(s) for high-level understanding of
- * the material; read the RFCs for precise details.
+ * TCP Vegas implementation of a sender.
  * 
- * @author Ivan Marsic
+ * @author Rell
  */
-public class SenderTahoe extends Sender {
+public class SenderVegas extends Sender {
 
 	/**
 	 * Constructor.
@@ -37,7 +22,7 @@ public class SenderTahoe extends Sender {
 	 */
 
 
-	public SenderTahoe(Endpoint localTCPendpoint_) {
+	public SenderVegas(Endpoint localTCPendpoint_) {
 		super(localTCPendpoint_);
 
 		// construct the objects for different states of the sender:

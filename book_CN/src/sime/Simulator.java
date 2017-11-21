@@ -302,6 +302,15 @@ public class Simulator {
 		System.out.println(
 			"Sender utilization: " + Math.round(utilization_*100.0f) + " %"
 		);
+		System.out.println(
+				"Total Bytes Sent: "+senderEndpt.getSender().getTotalBytesTransmitted()
+		);
+		System.out.println(
+				"Total resets to slow start by sender:"+senderEndpt.getSender().totalResetToSlowStart
+		);
+		System.out.println(
+				"Total dropped packets by router: "+router.totalPacketLoss
+		);
 	} //end the function run()
 
 	/** The main method. Takes the number of iterations as
