@@ -162,7 +162,8 @@ public class SenderStateFastRecoveryVegas extends SenderState {
     		}
     		// Set the congestion window size to slow start threshold;
     		// this is termed "deflating" the window.
-    		return sender.SSThresh;
+    		//return sender.SSThresh;
+			return sender.congWindow-(4*Sender.MSS);
     	}
 	}
 
