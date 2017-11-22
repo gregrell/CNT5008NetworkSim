@@ -148,7 +148,7 @@ public abstract class SenderState {
 		    // depending  on the type of TCP sender (Tahoe, Reno, etc.)
     		if (
     			(Simulator.currentReportingLevel & Simulator.REPORTING_SENDERS) != 0
-        		&& after3xDupACKstate instanceof SenderStateFastRecovery
+        		&& (after3xDupACKstate instanceof SenderStateFastRecovery||after3xDupACKstate instanceof SenderStateFastRecoveryVegas)
 			) {
 				System.out.println("############## Sender entering fast recovery.");
 			}

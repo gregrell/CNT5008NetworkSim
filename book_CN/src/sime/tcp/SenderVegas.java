@@ -1,5 +1,5 @@
 /*
- * Created on Sep 10, 2005
+ * Created on Oct 27, 2012
  *
  * Rutgers University, Department of Electrical and Computer Engineering
  * <P> Copyright (c) 2005-2013 Rutgers University
@@ -9,46 +9,62 @@ package sime.tcp;
 import sime.Endpoint;
 
 /**
- * TCP Vegas implementation of a sender.
+ * TCP <i>old</i> Reno implementation of a sender that appeared first
+ * in early 1990s. TCP Reno followed TCP Tahoe, which was developed
+ * in late 1980s.<BR>
+ * This class does <i>not</i> implement a TCP NewReno sender.
  * 
- * @author Rell
+ * @see SenderNewReno
+ *
+ * @author Ivan Marsic
  */
 public class SenderVegas extends Sender {
 
 	/**
 	 * Constructor.
+	 *
 	 * @param localTCPendpoint_ The local TCP endpoint
 	 * object that contains this module.
 	 */
+
 
 
 	public SenderVegas(Endpoint localTCPendpoint_) {
 		super(localTCPendpoint_);
 
 		// construct the objects for different states of the sender:
-		SenderStateSlowStart slowStartState = new SenderStateSlowStart(
+		SenderStateSlowStartVegas slowStartState = new SenderStateSlowStartVegas(
 		    this, null, null /* after 3x DupACKs state */
 		);
-		SenderState congestionAvoidanceState = new SenderStateCongestionAvoidance(
-		    this, slowStartState, slowStartState /* after 3x DupACKs state */
+		SenderStateCongestionAvoidanceVegas congestionAvoidanceState =
+			new SenderStateCongestionAvoidanceVegas(
+				this, slowStartState, null /* after 3x DupACKs state */
+			);
+		SenderState fastRecoveryState = new SenderStateFastRecoveryVegas(
+			this, slowStartState, congestionAvoidanceState
 		);
 		slowStartState.setCongestionAvoidanceState(congestionAvoidanceState);
-		// Tahoe goes to slow start after 3x DupACKs:
-		slowStartState.setAfter3xDupACKstate(slowStartState);
+
+		// Vegas goes to fast recovery after 3x DupACKs:
+		slowStartState.setAfter3xDupACKstate(fastRecoveryState);
+		congestionAvoidanceState.setAfter3xDupACKstate(fastRecoveryState);
 
 		// Sender always starts in the "slow start" state
 		currentState = slowStartState;
 	}
 
 	/**
-	 * This method resets the sender's parameters when the
-	 * RTO timer timed out.
+	 * This method resets the sender's parameters when a
+	 * RTO timer timed out. It is very similar to
+	 * {@link SenderTahoe#onExpiredRTOtimer()}, but only
+	 * slightly different in how it calculates <code>SSThresh</code>.
 	 */
 	@Override
 	void onExpiredRTOtimer() {
-		// Reduce the slow start threshold
-		// using the old congestion window size.
-		SSThresh = congWindow / 2;
+		// Reduce the slow start threshold using
+		// the flight size (this is different from TCP Tahoe!).
+		int flightSize_ = lastByteSent - lastByteAcked;
+		SSThresh = flightSize_ / 2;
 		SSThresh = Math.max(SSThresh, 2*MSS); 			
 
 		// Perform the exponential backoff for the RTO timeout interval 
@@ -63,51 +79,46 @@ public class SenderVegas extends Sender {
 	/**
 	 * This method performs the so-called <i>Fast Retransmit</i>
 	 * to retransmit the oldest outstanding segment because
-	 * after 3x dupACKs, it's presumably lost.
+	 * after {@link Sender#dupACKthreshold} dupACKs,
+	 * it is presumably lost. It is similar to
+	 * {@link SenderTahoe#onThreeDuplicateACKs()}, but
+	 * different in how it calculates the sender's parameters.
 	 * 
-	 * <p>Tahoe sender doesn't care about the number of
-	 * duplicate ACKs as long as it's at least three
-	 * (or whatever {@link Sender#dupACKthreshold} is set to).
-	 * This means that any dupACKs received after the first
-	 * three are ignored.
-	 * Also, after this kinds of event, the sending mode in
-	 * TCP Tahoe is always reset to <i>slow-start</i>.
-	 * The method leaves the RTO timer running,
-	 * for the outstanding segments.
+	 * <P>Unlike Tahoe, TCP Reno sender considers the number of
+	 * duplicate ACKs in excess of the first {@link Sender#dupACKthreshold} dupACKs.
+	 * @see SenderStateFastRecovery#handleDupACK(Segment)
 	 */
 	@Override
 	void onThreeDuplicateACKs() {
-		//ADDED BY RELL
-		incrementDupAckCount();
-		//System.out.println("\t\t\t\tTotal number of Duplicate Ack Handles "+getDupAckCount());//ADDED BY RELL
-		///
-
-		// Tahoe ignores additional dupACKs over and above the first three.
-		if (dupACKcount != dupACKthreshold) return;
+		// Mark the sequence number of the last currently
+		// unacknowledged byte, so that we know when all
+		// currently outstanding data will be acknowledged.
+		// This ACK is known as a "recovery ACK".
+		// This field is used to decide when Fast Recovery should end.
+		//@See TCPSenderStateFastRecovery#handleNewACK()
+		if (lastByteSentBefore3xDupAcksRecvd < 0)	// if not already set:
+			lastByteSentBefore3xDupAcksRecvd = lastByteSent;
 
 		// reduce the slow start threshold
-		SSThresh = congWindow / 2;
+		int flightSize_ = lastByteSent - lastByteAcked;
+		SSThresh = flightSize_ / 2;
 		// Set to an integer multiple of MSS
 		SSThresh -= (SSThresh % MSS);
 		SSThresh = Math.max(SSThresh, 2*MSS);
 
-		// congestion window will be set to 1xMSS:
-		congWindow = MSS;
-						
+		// congestion window = 1/2 FlightSize + 3xMSS:
+		congWindow =
+			Math.max(flightSize_/2, 2*MSS) + 3*MSS;
+		// should we multiply with {@link Sender#dupACKthreshold} instead of "3"??
+
 		// Retransmit the oldest unacknowledged (presumably lost) segment.
 		// This is called "Fast Retransmit"
-		// Recall that Tahoe sender sends only one segment
-		// when a loss is detected!
-		Segment oldestSegment_ = getOldestUnacknowledgedSegment();
-		// the timestamp of retransmitted segments should be set to "-1"
+	    Segment oldestSegment_ = getOldestUnacknowledgedSegment();
+		// The timestamp of retransmitted segments should be set to "-1"
+	    // to avoid performing RTT estimation based on retransmitted segments:
 		oldestSegment_.timestamp = -1;
 	    localEndpoint.getNetworkLayerProtocol().send(
 	    	localEndpoint, oldestSegment_
 	    );
-
-		//NOTE: We do NOT reset the counter of duplicate ACKs
-	    // because here we don't know how many more dupACKs may still arrive.
-	    // In other words, here we don't call {@link Sender#resetParametersToSlowStart()}
-	    // Instead, the "dupACKcount" will be reset in {@link SenderState#handleNewACK()}
 	}
 }

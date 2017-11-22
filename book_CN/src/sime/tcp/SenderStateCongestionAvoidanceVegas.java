@@ -24,17 +24,17 @@ import sime.Simulator;
  * @author Ivan Marsic
  *
  */
-public class SenderStateCongestionAvoidance extends SenderState {
+public class SenderStateCongestionAvoidanceVegas extends SenderState {
 
     /**
      * Constructor for the congestion avoidance state of a TCP sender.
-     * 
+     *
      * @param sender
      * @param slowStartState Slow start state
      * @param after3xDupACKstate State to enter after three duplicate-ACKs are received (different for Tahoe vs. Reno)
      */
-    public SenderStateCongestionAvoidance(
-    	Sender sender, SenderState slowStartState, SenderState after3xDupACKstate
+    public SenderStateCongestionAvoidanceVegas(
+    	SenderVegas sender, SenderState slowStartState, SenderState after3xDupACKstate
     ) {
     	this.sender = sender;
     	this.slowStartState = slowStartState;
@@ -44,7 +44,7 @@ public class SenderStateCongestionAvoidance extends SenderState {
 
 	/**
 	 * The reason for this method is that the constructors
-	 * {@link SenderStateCongestionAvoidance} and {@link SenderStateFastRecovery}
+	 * {@link SenderStateCongestionAvoidanceVegas} and {@link SenderStateFastRecovery}
 	 * need each other, so one has to be created first, and then
 	 * the other will be set using this method.<BR>
 	 * Thus package visibility only.
@@ -93,14 +93,25 @@ public class SenderStateCongestionAvoidance extends SenderState {
 		} else { // everything is ACK-ed, cancel the RTO timer
 			sender.cancelRTOtimer();
 		}
-		System.out.println("ackSequenceNumber = "+ackSequenceNumber_+" \t\t\t\t\t\t\tand lastByteAcked :"+lastByteAcked_);
 
 		int congWindowNew_ = sender.congWindow;
-		// Check if acknowledging more than the current CongWin size:
-		if ((ackSequenceNumber_ - lastByteAcked_) >= congWindowNew_) {
+		System.out.println("ackSequenceNumber = "+ackSequenceNumber_+" \t\t\t\t\t\t\tand lastByteAcked :"+lastByteAcked_+" Difference of :"+((ackSequenceNumber_-lastByteAcked_)/Sender.MSS));
+		System.out.println("Congestion Window :"+congWindowNew_/Sender.MSS);
+		sender.expectedThroughput=sender.congWindow/Sender.MSS;
+		sender.actualThroughput=(ackSequenceNumber_-lastByteAcked_)/Sender.MSS;
+		sender.diffThroughput=sender.expectedThroughput-sender.actualThroughput;
+		System.out.println("sender.diffThroughput:"+sender.diffThroughput);
+
+
+
+		// TCP Vegas - check expected betwee alpha and beta
+		if (sender.diffThroughput <=sender.alpha) {
 			congWindowNew_ += Sender.MSS;
-		} else {
-			congWindowNew_ += ((Sender.MSS * Sender.MSS) / congWindowNew_);
+		} else if(sender.diffThroughput<=sender.beta) {
+			congWindowNew_ -= Sender.MSS;
+		}
+		else{
+			//do nothing
 		}
 		return congWindowNew_;
 	}

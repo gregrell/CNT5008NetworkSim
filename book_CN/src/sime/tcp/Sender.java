@@ -90,6 +90,13 @@ public abstract class Sender implements TimedComponent {
  	 * (Note the package visibility of this field.) */
  	int SSThresh = 65535;
 
+	//These values used for SenderVegas
+	float expectedThroughput;
+	float actualThroughput;
+	float diffThroughput;
+	int alpha=0;
+	int beta=1;
+
  	/** Default value of the timer, in our case equals to {@value} &times; RTT. */
  	static final int TIMER_DEFAULT = 3;
 
