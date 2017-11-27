@@ -240,6 +240,7 @@ public class Simulator {
 			// Our main goal is that the sending endpoint handles acknowledgments
 			// received via the router in the previous transmission round, if any.
 
+			senderEndpt.sender.currentRTT=currentTime;
 			senderEndpt.process(1);
 
 			// Let the first link again move any packets:
@@ -272,6 +273,11 @@ public class Simulator {
 			if (
 				(Simulator.currentReportingLevel  & Simulator.REPORTING_SIMULATOR) != 0
 			) {
+				System.out.println(
+						"Total Bytes Sent:" + senderEndpt.getSender().getTotalBytesTransmitted()+"\n"+
+								"Total Resets to Slow Start: "+senderEndpt.getSender().totalResetToSlowStart+"\n"+
+								"Total dropped packets by router: "+router.totalPacketLoss
+				);
 				System.out.println(
 					"End of RTT #" + (int)currentTime +
 					"   ------------------------------------------------\n"

@@ -96,8 +96,10 @@ public abstract class Sender implements TimedComponent {
 	float diffThroughput;
 	int alpha=0;
 	int beta=1;
+	public double currentRTT;
 
- 	/** Default value of the timer, in our case equals to {@value} &times; RTT. */
+
+	/** Default value of the timer, in our case equals to {@value} &times; RTT. */
  	static final int TIMER_DEFAULT = 3;
 
  	/** Retransmission timer (RTO) estimation;
@@ -429,7 +431,7 @@ public abstract class Sender implements TimedComponent {
 			System.out.println(
 				"SENDER:\t\tCongWin="+congWindow + "\t" + "EffectiveWin="+effectiveWindow_ +
 				"\t" + "FlightSize="+flightSize_ + "\t" + "SSThresh="+SSThresh + "\t" +
-				"RTOinterval="+rtoEstimator.getTimeoutInterval()
+				"RTOinterval="+rtoEstimator.getTimeoutInterval()+"\t\t\t"+"CongWin Packets:"+congWindow/MSS+"\t"+"SSThresh in Packets: "+SSThresh/MSS+"\t"+"Flight Size : "+flightSize_/MSS
 			);
 		} else {	// Default reporting, always printed out:
 			System.out.println(

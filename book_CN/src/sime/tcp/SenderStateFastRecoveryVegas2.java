@@ -22,7 +22,7 @@ import sime.Simulator;
  * @author Ivan Marsic
  *
  */
-public class SenderStateFastRecoveryVegas extends SenderState {
+public class SenderStateFastRecoveryVegas2 extends SenderState {
 
 	/**
 	 * Parameter that indicates whether this is the first
@@ -41,7 +41,7 @@ public class SenderStateFastRecoveryVegas extends SenderState {
      * @param slowStartState Slow start state
      * @param congestionAvoidanceState Congestion avoidance state
      */
-    public SenderStateFastRecoveryVegas(
+    public SenderStateFastRecoveryVegas2(
     	Sender sender, SenderState slowStartState,
     	SenderState congestionAvoidanceState
     ) {
@@ -115,7 +115,7 @@ public class SenderStateFastRecoveryVegas extends SenderState {
     			"PANIC in " + this.getClass().getName() + "#" + this.getClass().getEnclosingMethod().getName()
     		);
     		return sender.congWindow;
-    	} else if ((sender instanceof SenderNewReno) &&
+    	} else if ((sender instanceof SenderVegas2) &&
     		(ackSequenceNumber_ < sender.lastByteSentBefore3xDupAcksRecvd)
     	) {		// "partial ACK" received
     		// ONLY in case of a NewReno sender, because of a "partial ACK":
@@ -145,7 +145,9 @@ public class SenderStateFastRecoveryVegas extends SenderState {
     			}
     			this.firstPartialACK = false;
 //    		}
-			return congWindowTemp;
+			double tmpVal=congWindowTemp*.50/Sender.MSS;
+			return (int)(congWindowTemp-(tmpVal*Sender.MSS));
+			//return congWindowTemp;
     	} else {	// "full ACK" received
 	    	// All data that were outstanding at 3x dupACKs have been ACK-ed,
 	    	// so reset the indicator parameter.

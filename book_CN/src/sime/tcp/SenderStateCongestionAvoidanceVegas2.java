@@ -24,7 +24,7 @@ import sime.Simulator;
  * @author Ivan Marsic
  *
  */
-public class SenderStateCongestionAvoidanceVegas extends SenderState {
+public class SenderStateCongestionAvoidanceVegas2 extends SenderState {
 
     /**
      * Constructor for the congestion avoidance state of a TCP sender.
@@ -33,8 +33,12 @@ public class SenderStateCongestionAvoidanceVegas extends SenderState {
      * @param slowStartState Slow start state
      * @param after3xDupACKstate State to enter after three duplicate-ACKs are received (different for Tahoe vs. Reno)
      */
-    public SenderStateCongestionAvoidanceVegas(
-    	SenderVegas sender, SenderState slowStartState, SenderState after3xDupACKstate
+    double baseValue=1; // set to 1 by default
+    double lastDupAck=0;// set to 0 by default
+	int lastAdd=0;
+
+    public SenderStateCongestionAvoidanceVegas2(
+    	SenderVegas2 sender, SenderState slowStartState, SenderState after3xDupACKstate
     ) {
     	this.sender = sender;
     	this.slowStartState = slowStartState;
@@ -44,7 +48,7 @@ public class SenderStateCongestionAvoidanceVegas extends SenderState {
 
 	/**
 	 * The reason for this method is that the constructors
-	 * {@link SenderStateCongestionAvoidanceVegas} and {@link SenderStateFastRecovery}
+	 * {@link SenderStateCongestionAvoidanceVegas2} and {@link SenderStateFastRecovery}
 	 * need each other, so one has to be created first, and then
 	 * the other will be set using this method.<BR>
 	 * Thus package visibility only.
@@ -105,10 +109,18 @@ public class SenderStateCongestionAvoidanceVegas extends SenderState {
 
 
 		// TCP Vegas - check expected betwee alpha and beta
-		if (sender.diffThroughput <=sender.alpha) {
-			congWindowNew_ += Sender.MSS;
-		} else if(sender.diffThroughput>=sender.beta) {
-			congWindowNew_ -= Sender.MSS;
+		if ((sender.diffThroughput <=sender.alpha)&&(sender.currentRTT-lastDupAck)>baseValue) { //no congestion detected, increase, but only after 10X the RTT value of last congestion detection
+			//congWindowNew_ += Sender.MSS;
+			lastAdd++;
+			if (lastAdd>=10) {
+				congWindowNew_ += Sender.MSS;
+				lastAdd=0;
+			}
+		} else if(sender.diffThroughput>=sender.beta) { //congestion detected, decrease by 1, update base value
+			//congWindowNew_ -= Sender.MSS;
+			congWindowNew_-= Sender.MSS;
+			baseValue=sender.currentRTT-lastDupAck;
+			lastDupAck=sender.currentRTT;
 		}
 		else{
 			//do nothing

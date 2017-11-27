@@ -6,13 +6,7 @@
  */
 package sime;
 
-import sime.tcp.Segment;
-import sime.tcp.SenderNewReno;
-import sime.tcp.Receiver;
-import sime.tcp.SenderReno;
-import sime.tcp.Sender;
-import sime.tcp.SenderTahoe;
-import sime.tcp.SenderVegas;
+import sime.tcp.*;
 
 /**
  * This class implements a simple TCP endpoint that is composed
@@ -72,6 +66,9 @@ public class Endpoint extends NetworkElement {
 			this.sender = new SenderReno(this);
 		} else if(senderType_.matches("Vegas")){
 			this.sender = new SenderVegas(this);
+		}
+		  else if(senderType_.matches("Vegas2")){
+			this.sender = new SenderVegas2(this);
 		}
 
 		else {
